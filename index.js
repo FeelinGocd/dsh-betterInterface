@@ -8,6 +8,7 @@
  *   lib/host/rename-handler.js   POST /better-interface/rename（Live 重命名）
  *   lib/host/location-handler.js GET  /better-interface/session-location（Phase 6 📂）
  *   lib/host/manage-handler.js   GET  /better-interface/manage-sessions + POST /session-state（Phase 6 状态）
+ *   lib/host/delete-handler.js   DELETE /better-interface/session-delete（已关闭会话）
  *   lib/session.js              纯函数（索引过滤 / title / Branch 挂载推导）
  *
  * 端点（loopback-only；method 守卫在各 handler 内）：
@@ -16,6 +17,7 @@
  *   GET  /better-interface/session-location?sessionId=…
  *   GET  /better-interface/manage-sessions
  *   POST /better-interface/session-state { sessionId, state }
+ *   DELETE /better-interface/session-delete?sessionId=…
  *
  * 依赖经模块级 export const inject 声明（与 cordis.patch.yml 行级 inject
  * 保持一致）；cordis 保持 fiber PENDING 直到服务就绪，apply() 内直接访问
@@ -25,6 +27,7 @@
 import { makeSessionHandler } from './lib/host/session-handler.js'
 import { makeRenameHandler } from './lib/host/rename-handler.js'
 import { makeLocationHandler } from './lib/host/location-handler.js'
+import { makeDeleteHandler } from './lib/host/delete-handler.js'
 import { makeManageHandler, makeStateHandler, openStateTable } from './lib/host/manage-handler.js'
 
 export const name = 'dsh-better-interface'
@@ -72,6 +75,11 @@ export async function apply(ctx, config = {}) {
     path: '/better-interface/session-state',
     handler: makeStateHandler({ sessions, persistence, stateTable, archivedIds, ctx }),
   })
-  ctx.effect(() => [d1, d2, d3, d4, d5], 'better-interface: index + rename + location + manage routes')
+  const d6 = webServer.register({
+    kind: 'exact',
+    path: '/better-interface/session-delete',
+    handler: makeDeleteHandler({ sessions, persistence, ctx }),
+  })
+  ctx.effect(() => [d1, d2, d3, d4, d5, d6], 'better-interface: session routes')
   ctx.logger?.info?.('[dsh-better-interface] host applied (index + branches + rename + location + session states)')
 }

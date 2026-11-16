@@ -951,6 +951,8 @@ const acts1 = row1.children[2].children
 assert.equal(acts1[0].children[0], '隐藏')
 assert.equal(acts1[1].children[0], '归档')
 assert.equal(acts1[2].children[0], '📂')
+assert.equal(acts1[3].children[0], '删除')
+assert.equal(acts1[3].props.disabled, true, '打开中的会话不可删除')
 // 名称与工作区显示（displayTitle + workspace.title）
 const name1 = row1.children[1].children[0]
 assert.equal(name1.props.className, 'sbi-manage-name')
@@ -964,10 +966,10 @@ assert.ok(row2.children[0].props.className.indexOf('sbi-manage-state-hidden') !=
 assert.equal(row2.children[2].children[0].children[0], '恢复')
 const name2 = row2.children[1].children[0]
 assert.equal(name2.children[0], '换一种架构实现', 'cold 会话也显示名称')
-// 原生归档行：徽标"已归档（原生）"，无恢复按钮（仅 📂）
+// 原生归档行可打开文件夹或删除已关闭的会话。
 const row3 = mgRows[2]
 assert.equal(row3.children[0].children[0], '已归档（原生）', '原生归档徽标')
-assert.equal(row3.children[2].children.length, 1, '原生归档无恢复按钮')
+assert.equal(row3.children[2].children.length, 2, '原生归档可删除')
 assert.equal(row3.children[2].children[0].children[0], '📂')
 ok('管理界面渲染', '分工作组 + 名称/工作区 + 状态徽标 + 隐藏/归档/恢复/📂 + 原生归档')
 
@@ -1022,5 +1024,22 @@ mgRoot = renderSection(secBI, secProps)
 const filteredRows = allRowsInList(mgRoot.children[0].children[3])
 assert.equal(filteredRows.length, 1, '过滤后只剩 hidden 行')
 ok('过滤 tabs', '已隐藏 → 只显示 hidden 会话')
+
+const deleteButton = filteredRows[0].children[2].children.find((action) => action.children[0] === '删除')
+assert.equal(deleteButton.props.disabled, false)
+const deleteCalls = []
+const existingFetch = globalThis.fetch
+globalThis.fetch = (url, options) => {
+  if (options?.method !== 'DELETE') return existingFetch(url, options)
+  deleteCalls.push(url)
+  return Promise.resolve({ ok: true })
+}
+windowStub.confirm = () => false
+await deleteButton.props.onClick()
+assert.equal(deleteCalls.length, 0, '取消确认不发删除请求')
+windowStub.confirm = () => true
+await deleteButton.props.onClick()
+assert.deepEqual(deleteCalls, ['/better-interface/session-delete?sessionId=branch-cold'])
+ok('删除确认', '确认后才请求删除已关闭的会话')
 
 console.log('\n结果: ' + passed + ' 项断言全部通过')

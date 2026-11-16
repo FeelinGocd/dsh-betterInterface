@@ -174,7 +174,8 @@ assert.ok(renameRoute, '必须注册 POST /better-interface/rename')
 assert.ok(locationRoute, '必须注册 GET /better-interface/session-location')
 assert.ok(manageRoute, '必须注册 GET /better-interface/manage-sessions')
 assert.ok(stateRoute, '必须注册 POST /better-interface/session-state')
-assert.equal(routes.length, 5, '注册 5 条路由（session + rename + location + manage + state）')
+assert.equal(routes.length, 6, '注册 6 条会话路由')
+assert.ok(routes.some((r) => r.path === '/better-interface/session-delete'))
 ok('路由注册', 'session/rename/location/manage-sessions/session-state（inject 含 webServer+sessions+sessionPersistence+sessionTitle+storageDomain）')
 
 async function callHandler(handler, url, opts = {}) {

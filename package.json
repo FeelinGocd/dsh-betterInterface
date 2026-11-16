@@ -16,7 +16,7 @@
     "./package.json": "./package.json"
   },
   "scripts": {
-    "test": "node host-test.mjs && node smoke-test.mjs && node --test price-monitor.test.mjs"
+    "test": "node host-test.mjs && node smoke-test.mjs && node --test price-monitor.test.mjs session-delete.test.mjs"
   },
   "dsh": {
     "bundle": {

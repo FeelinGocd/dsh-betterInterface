@@ -7,8 +7,7 @@
 # 均会读取；fiber 保持 PENDING 直到这些服务就绪，apply() 内直接访问
 # ctx.<service> 才是安全的（未声明即访问会抛 "cannot get property X without
 # inject"）：
-#   - webServer        ：注册五条路由（session / rename / session-location /
-#                         manage-sessions / session-state）；
+#   - webServer        ：注册会话索引、改名、路径、状态和删除路由；
 #   - sessions         ：读取 live Session（events / header / list）；
 #   - sessionPersistence：Live/Cold 合并枚举 + Cold 只读 inspect（Phase 4.1）；
 #   - sessionTitle     ：Branch 重命名（POST /rename → SessionTitleService.rename，

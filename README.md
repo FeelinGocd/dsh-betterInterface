@@ -33,7 +33,8 @@ SessionTitleService（append session/title、pins 标题）。
 | 行内重命名 | hover Branch 显示 ✎ → 行内输入框 + ✓ 保存 / ✕ 取消；仅 Live（经 DSH 原生 SessionTitleService），Cold 明确拒绝 | Phase 5 |
 | 编辑态锁定 | 改名期间（输入法候选窗 / 鼠标移出窗口）悬浮窗**不关闭**；取消/保存后恢复 | Phase 5.1 |
 | 打开定位最新 | 每次重新打开悬浮窗滚到**最新消息**（底部）；同一悬停会话内移动与静默刷新不打扰 | Phase 5.1 |
-| 打开所在文件夹 | Branch 项 / 窗口头部 / 设置页会话行 📂 → host locate() 定位会话文件 → DSH 原生打开通道（≥v0.1.2 用官方 remote.session.openWorkspacePath，旧版回退 workspaces.openPath；用户手动删除，仅 Cold 可删） | Phase 6 |
+| 打开所在文件夹 | Branch 项 / 窗口头部 / 设置页会话行 📂 → host locate() 定位会话文件 → DSH 原生打开通道（≥v0.1.2 用官方 remote.session.openWorkspacePath，旧版回退 workspaces.openPath） | Phase 6 |
+| 删除会话 | 在设置页确认后，将已关闭会话的 JSONL 记录移到本地回收目录 | |
 | 设置面板管理界面 | 设置弹窗导航（Agent 预设下方）新增「BetterInterface」条目 → 面板内管理页（会话列表/状态徽标/过滤 tabs/隐藏/归档/恢复/📂） | Phase 6 |
 | 名称与归属显示 | 管理界面每行显示会话**名称**（displayTitle，与侧栏同源）+ **所属工作区**（workspace.title）+ sessionId | Phase 6 |
 | 分工作组 | 管理界面按**工作区**分组（▾ 标题 + 会话数，可折叠）；未归属会话进「未分组」 | Phase 6 |
@@ -111,8 +112,7 @@ SessionTitleService（append session/title、pins 标题）。
   （2026-08 client refactor 已删除 `ctx.workspaces.openPath`；两通道都用 `ctx.get()`
   懒解析，不进静态 inject，旧版 DSH 自动回退 `ctx.workspaces.openPath(folder)`）。
   窗口头部（对话索引标题右侧）也有 📂，打开**当前会话**所在文件夹；设置面板
-  管理页每个会话行同样带 📂。**插件只读定位、绝不执行删除**：物理删除由用户在
-  资源管理器手动完成（整个 `session-<uuid>` 目录，进回收站）。
+  管理页每个会话行同样带 📂。删除会话可使用设置页独立的「删除」按钮。
 - **长消息折叠（Phase 7）**：Chat 中超过 5 行的用户气泡（`data-chat-flow-kind` 为
   `user` 或 `steering`——后者是 0.2 起常见的排队/插话消息，同为用户气泡样式）
   自动折叠为 5 行 + 底部
@@ -390,17 +390,11 @@ Phase 6 管理界面数据源：全量会话（live+cold 合并）+ 用户视角
    ordinary cold sessions resume once per identity）；本插件按文档 §15 **不自动 resume**，
    Cold 重命名明确拒绝。
 
-### Session 删除（Phase 5 之后的调查沉淀）
+### 删除会话
 
-1. DSH **无删除 Session 数据的 API**（session-persistence 无 delete/purge，append-only）；
-   唯一移除路径 = **`workspace.archiveSession(sessionId)`**（归档隐藏，保留 log + 槽位，
-   **无 unarchive**，注释 "a future unarchive restores its position"）。
-2. 归档**不级联**子 Session：workspace/src/index.ts 只把单个 id 加入 archivedSessionIds；
-   UI 过滤 `sessionVisible()` 逐 Session 检查 `!archived.has(session.id)` —— 归档父
-   后子仍显示，需**逐个归档**。
-3. 安全约束：session 必须存在（live 或持久化 header）否则 WorkspaceUnknownSessionError →
-   `session-not-found`；幂等；registry 写队列串行；不动数据、不动文件夹。
-4. 因此插件**不提供"删除 Branch"**功能（对应目标文档 §14 不实现项）。
+在 **设置 → BetterInterface** 的会话行点击「删除」并确认。当前仍打开或被其他 DSH 进程占用的会话需要先关闭。
+
+删除会将该会话的独立 JSONL 目录移到 DSH 会话存储根目录旁的 `better-interface-trash`。每条记录附带 `restore.json`，如需恢复，可关闭 DSH 后将其中的 `session` 目录移回 `originalPath`。其他会话和分支各自保留。
 
 ## 目录结构
 
@@ -526,8 +520,6 @@ npm test
 - 长会话点击早期消息会连续 loadOlder（每 50 条一次请求），体验受网络与窗口大小影响；
   翻页之间会让出一帧（等 React 渲染完本页 DOM 再翻下一页），避免同步插入大量 DOM
   卡顿主线程；翻页后也等一帧再查询 DOM（防止行未挂载导致误报 Unable to locate）。
-- Session 删除：DSH 无物理删除 API，仅 workspace.archiveSession（归档不级联、无
-  unarchive）；插件不提供删除 Branch 功能（详见「调查结论 · Session 删除」）。
 - **storageDomain 单元名（踩坑教训）**：域/表名必须匹配 `UNIT_NAME_RE`
   （`/^[a-z][a-z0-9_]*$/`）——**不能用连字符**；插件域名为 `better_interface`
   （官方 `message_feedback` 同款下划线）。曾用 `better-interface` 导致
@@ -536,8 +528,7 @@ npm test
 - **状态语义（Phase 6）**：`hidden` / `archived` 是**插件用户视角状态**（storageDomain
   metadata），**已联动悬浮窗索引**：被隐藏/归档的 Branch 从索引中过滤（corpus 层
   `buildBranchCorpus` 过滤 child，当前会话本身不受影响——你正在看它）；设置面板
-  管理界面按状态分组/过滤。恢复 = 切回 `active`（索引重新出现）；物理删除不在状态机内
-  （用户手动，📂 打开所在文件夹）。
+  管理界面按状态分组/过滤。恢复 = 切回 `active`（索引重新出现）。
 - **管理界面名称显示**：每行显示 `SessionSummary.displayTitle`（settings.section 标准
   props `useSessions`，与侧栏同源）+ 所属工作区（`useWorkspaces` 的 `workspace.title`）+
   sessionId；标准数据不可用时降级只显示 sessionId。名称不可改名（改名走 Branch 重命名 / DSH 原生）。
