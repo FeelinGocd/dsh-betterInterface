@@ -1,0 +1,45 @@
+# dsh-better-interface bundle layer.
+#
+# A patch is a YAML array of loader patch entries; `insert` adds new plugin rows.
+# The session UI and price monitor have separate Host lifecycles and config rows.
+#
+# 行级 inject 与模块级 export const inject（index.js）保持一致，两种声明 loader
+# 均会读取；fiber 保持 PENDING 直到这些服务就绪，apply() 内直接访问
+# ctx.<service> 才是安全的（未声明即访问会抛 "cannot get property X without
+# inject"）：
+#   - webServer        ：注册五条路由（session / rename / session-location /
+#                         manage-sessions / session-state）；
+#   - sessions         ：读取 live Session（events / header / list）；
+#   - sessionPersistence：Live/Cold 合并枚举 + Cold 只读 inspect（Phase 4.1）；
+#   - sessionTitle     ：Branch 重命名（POST /rename → SessionTitleService.rename，
+#                        Phase 5）；
+#   - storageDomain    ：会话状态 metadata 的 KV 域存储（Phase 6）；
+#   - workspaceRegistry：读取 DSH 原生归档集合（archivedSessionIds），合并进
+#                        管理界面状态（Phase 6 原生归档联动）。
+- insert:
+    - id: better-interface
+      name: dsh-better-interface
+      inject:
+        - webServer
+        - sessions
+        - sessionPersistence
+        - sessionTitle
+        - storageDomain
+        - workspaceRegistry
+      config:
+        # 每条索引行预览的文本长度；超出截断并追加 "…"。默认 30 字符。
+        previewChars: 30
+    - id: price-monitor
+      name: dsh-better-interface/price-monitor
+      inject:
+        - tools
+        - credentials
+        - webServer
+      config:
+        apiKeyEnv: DEEPSEEK_API_KEY
+        balanceUrl: https://api.deepseek.com/user/balance
+        pricingUrl: https://api-docs.deepseek.com/zh-cn/quick_start/pricing/
+        fetchTimeoutMs: 15000
+        balanceCacheMs: 60000
+        refreshIntervalMs: 86400000
+        holidays: []
