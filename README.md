@@ -34,7 +34,7 @@ SessionTitleService（append session/title、pins 标题）。
 | 编辑态锁定 | 改名期间（输入法候选窗 / 鼠标移出窗口）悬浮窗**不关闭**；取消/保存后恢复 | Phase 5.1 |
 | 打开定位最新 | 每次重新打开悬浮窗滚到**最新消息**（底部）；同一悬停会话内移动与静默刷新不打扰 | Phase 5.1 |
 | 打开所在文件夹 | Branch 项 / 窗口头部 / 设置页会话行 📂 → host locate() 定位会话文件 → DSH 原生打开通道（≥v0.1.2 用官方 remote.session.openWorkspacePath，旧版回退 workspaces.openPath） | Phase 6 |
-| 删除会话 | 在设置页确认后，将已关闭会话的 JSONL 记录移到本地回收目录 | |
+| 删除会话 | 在设置页确认后，将已归档且已关闭会话的 JSONL 记录移到本地回收目录 | |
 | 设置面板管理界面 | 设置弹窗导航（Agent 预设下方）新增「BetterInterface」条目 → 面板内管理页（会话列表/状态徽标/过滤 tabs/隐藏/归档/恢复/📂） | Phase 6 |
 | 名称与归属显示 | 管理界面每行显示会话**名称**（displayTitle，与侧栏同源）+ **所属工作区**（workspace.title）+ sessionId | Phase 6 |
 | 分工作组 | 管理界面按**工作区**分组（▾ 标题 + 会话数，可折叠）；未归属会话进「未分组」 | Phase 6 |
@@ -392,7 +392,7 @@ Phase 6 管理界面数据源：全量会话（live+cold 合并）+ 用户视角
 
 ### 删除会话
 
-在 **设置 → BetterInterface** 的会话行点击「删除」并确认。当前仍打开或被其他 DSH 进程占用的会话需要先关闭。
+在 **设置 → BetterInterface** 先归档会话，再点击该行的「删除」并确认。插件归档和 DSH 原生归档均可。当前仍打开或被其他 DSH 进程占用的会话需要先关闭。
 
 删除会将该会话的独立 JSONL 目录移到 DSH 会话存储根目录旁的 `better-interface-trash`。每条记录附带 `restore.json`，如需恢复，可关闭 DSH 后将其中的 `session` 目录移回 `originalPath`。其他会话和分支各自保留。
 

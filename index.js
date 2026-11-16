@@ -8,7 +8,7 @@
  *   lib/host/rename-handler.js   POST /better-interface/rename（Live 重命名）
  *   lib/host/location-handler.js GET  /better-interface/session-location（Phase 6 📂）
  *   lib/host/manage-handler.js   GET  /better-interface/manage-sessions + POST /session-state（Phase 6 状态）
- *   lib/host/delete-handler.js   DELETE /better-interface/session-delete（已关闭会话）
+ *   lib/host/delete-handler.js   DELETE /better-interface/session-delete（已归档且关闭的会话）
  *   lib/session.js              纯函数（索引过滤 / title / Branch 挂载推导）
  *
  * 端点（loopback-only；method 守卫在各 handler 内）：
@@ -78,7 +78,7 @@ export async function apply(ctx, config = {}) {
   const d6 = webServer.register({
     kind: 'exact',
     path: '/better-interface/session-delete',
-    handler: makeDeleteHandler({ sessions, persistence, ctx }),
+    handler: makeDeleteHandler({ sessions, persistence, stateTable, archivedIds, ctx }),
   })
   ctx.effect(() => [d1, d2, d3, d4, d5, d6], 'better-interface: session routes')
   ctx.logger?.info?.('[dsh-better-interface] host applied (index + branches + rename + location + session states)')
